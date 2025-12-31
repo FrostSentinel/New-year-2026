@@ -28,10 +28,11 @@ body{
     radial-gradient(circle at 80% 90%, var(--bg2), transparent 55%),
     linear-gradient(180deg,var(--bg1),#ffffff);
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;      /* ✅ centered again */
   color:var(--text);
   overflow:hidden;
+  padding-bottom:48px;     /* space for footer */
 }
 
 .hidden{display:none!important}
@@ -73,7 +74,7 @@ button{
 
 canvas{width:100%;height:100%}
 
-/* 💬 Flirt text inside frame */
+/* 💬 Flirt text */
 #flirtText{
   position:absolute;
   inset:0;
@@ -131,6 +132,19 @@ canvas{width:100%;height:100%}
 @keyframes rise{
   to{transform:translateY(-120vh);opacity:0}
 }
+
+/* 🌿 Footer */
+footer{
+  position:fixed;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:12px;
+  color:#64748b;
+  opacity:0.7;
+  letter-spacing:0.08em;
+  pointer-events:none;
+}
 </style>
 </head>
 
@@ -181,6 +195,9 @@ canvas{width:100%;height:100%}
     It just hopes you stay a little longer.
   </p>
 </div>
+
+<!-- FOOTER -->
+<footer>s3ntinel__</footer>
 
 <script>
 const page1=document.getElementById("page1");
@@ -247,7 +264,6 @@ function drawLantern(l){
   ctx.roundRect(-w/2,-h,w,h,12);
   ctx.fill();
 
-  // flame
   ctx.fillStyle="#f59e0b";
   ctx.beginPath();
   ctx.ellipse(0,4,w*0.15,h*0.18,0,0,Math.PI*2);
