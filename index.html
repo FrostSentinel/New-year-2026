@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Welcome, 2026 🌅</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+:root{
+  --bg1:#fff1f2;
+  --bg2:#eef2ff;
+  --bg3:#fefce8;
+  --card:rgba(255,255,255,0.88);
+  --text:#334155;
+  --accent1:#fb7185;
+  --accent2:#8b5cf6;
+  --gold:#fbbf24;
+  --radius:clamp(18px,4vw,26px);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  min-height:100vh;
+  font-family:Poppins,system-ui;
+  background:
+    radial-gradient(circle at 20% 10%, var(--bg3), transparent 55%),
+    radial-gradient(circle at 80% 90%, var(--bg2), transparent 55%),
+    linear-gradient(180deg,var(--bg1),#ffffff);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text);
+  overflow:hidden;
+}
+
+.hidden{display:none!important}
+
+.card{
+  width:min(92vw,420px);
+  background:var(--card);
+  backdrop-filter:blur(10px);
+  border-radius:var(--radius);
+  padding:clamp(18px,4vw,26px);
+  text-align:center;
+  box-shadow:0 18px 36px rgba(0,0,0,.12);
+}
+
+h1,h2{font-family:"Playfair Display",serif}
+
+button{
+  border:none;
+  border-radius:999px;
+  padding:12px 34px;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  color:#fff;
+  cursor:pointer;
+  font-size:15px;
+}
+
+#gameArea{
+  position:relative;
+  width:100%;
+  height:clamp(240px,50vh,340px);
+  margin-top:14px;
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 0 0,#fde68a55 0,transparent 55%),
+    radial-gradient(circle at 100% 100%,#c7d2fe55 0,transparent 55%),
+    #ffffff;
+  overflow:hidden;
+}
+
+canvas{width:100%;height:100%}
+
+/* 💬 Flirt text inside frame */
+#flirtText{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .4s ease;
+}
+
+#flirtText span{
+  background:rgba(255,255,255,0.85);
+  padding:10px 18px;
+  border-radius:999px;
+  font-size:clamp(0.85rem,3.5vw,0.95rem);
+  color:#92400e;
+  box-shadow:0 10px 22px rgba(0,0,0,.15);
+}
+
+#flirtText.show{opacity:1}
+
+/* Overlay */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:5;
+}
+
+.overlay-card{
+  background:#ffffff;
+  padding:26px;
+  border-radius:22px;
+  text-align:center;
+  max-width:320px;
+}
+
+/* Completion lanterns */
+.finish-lantern{
+  position:fixed;
+  bottom:-60px;
+  width:28px;
+  height:42px;
+  background:radial-gradient(circle at 30% 30%,#fff 0,#fde68a 45%,#f59e0b 75%);
+  border-radius:10px;
+  box-shadow:0 0 20px rgba(245,158,11,.7);
+  animation:rise 4.5s ease-in forwards;
+  z-index:6;
+}
+
+@keyframes rise{
+  to{transform:translateY(-120vh);opacity:0}
+}
+</style>
+</head>
+
+<body>
+
+<!-- PAGE 1 -->
+<div class="card" id="page1">
+  <h1>Welcome, 2026 🌅</h1>
+  <p style="margin:14px 0;opacity:.85">
+    Take a slow breath.<br>
+    A new year is here — calm, open,<br>
+    and full of quiet possibilities.
+  </p>
+  <button id="startBtn">Step into 2026 ✨</button>
+</div>
+
+<!-- GAME -->
+<div class="card hidden" id="pageGame">
+  <h2>Light the Hope Lanterns 🕯️</h2>
+  <p style="opacity:.85">Tap a lantern… something sweet might appear</p>
+
+  <div id="gameArea">
+    <canvas id="c"></canvas>
+    <div id="flirtText"><span></span></div>
+  </div>
+
+  <div style="margin-top:8px;font-size:13px;opacity:.8" id="progress">
+    Lanterns lit: 0 of 8
+  </div>
+</div>
+
+<!-- CELEBRATION -->
+<div class="overlay hidden" id="celebrate">
+  <div class="overlay-card">
+    <h2>Your Hopes Are Glowing ✨</h2>
+    <p style="margin:10px 0;opacity:.85">
+      And so is this moment.
+    </p>
+    <button id="finalBtn">Continue →</button>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="card hidden" id="page4">
+  <h2>Hello, 2026 💛</h2>
+  <p style="margin-top:10px;line-height:1.75;opacity:.9">
+    This year doesn’t ask you to rush.<br>
+    It just hopes you stay a little longer.
+  </p>
+</div>
+
+<script>
+const page1=document.getElementById("page1");
+const pageGame=document.getElementById("pageGame");
+const page4=document.getElementById("page4");
+const celebrate=document.getElementById("celebrate");
+
+document.getElementById("startBtn").onclick=()=>{
+  page1.classList.add("hidden");
+  pageGame.classList.remove("hidden");
+  startGame();
+};
+
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+const flirtBox=document.getElementById("flirtText");
+const flirtSpan=flirtBox.querySelector("span");
+
+let lanterns=[],lit=0,run=true,flirtTimeout;
+
+const flirts=[
+  "Is it just me, or did you light up my screen?",
+  "That glow suits you.",
+  "Careful… you’re making this moment warmer.",
+  "One lantern, one smile.",
+  "You’re good at lighting things up 😉",
+  "That was cute. Do it again.",
+  "Soft light, softer heart."
+];
+
+function resize(){
+  const r=document.getElementById("gameArea").getBoundingClientRect();
+  canvas.width=r.width;
+  canvas.height=r.height;
+}
+window.addEventListener("resize",resize);
+
+function spawn(){
+  lanterns.push({
+    x:Math.random()*canvas.width,
+    y:canvas.height+60,
+    vx:(Math.random()-.5)*.2,
+    vy:-(.6+Math.random()),
+    sway:Math.random()*Math.PI*2,
+    alive:true
+  });
+}
+
+function drawLantern(l){
+  const w=canvas.width*0.065;
+  const h=w*1.5;
+  l.sway+=0.02;
+
+  ctx.save();
+  ctx.translate(l.x,l.y);
+  ctx.rotate(Math.sin(l.sway)*0.05);
+
+  const g=ctx.createLinearGradient(0,-h,0,0);
+  g.addColorStop(0,"#fff7ed");
+  g.addColorStop(1,"#fde68a");
+
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.roundRect(-w/2,-h,w,h,12);
+  ctx.fill();
+
+  // flame
+  ctx.fillStyle="#f59e0b";
+  ctx.beginPath();
+  ctx.ellipse(0,4,w*0.15,h*0.18,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function loop(){
+  if(!run) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(Math.random()<.02) spawn();
+  lanterns.forEach(l=>{
+    if(!l.alive) return;
+    l.x+=l.vx;
+    l.y+=l.vy;
+    drawLantern(l);
+    if(l.y<-80) l.alive=false;
+  });
+  requestAnimationFrame(loop);
+}
+
+function showFlirt(){
+  clearTimeout(flirtTimeout);
+  flirtSpan.textContent=flirts[Math.floor(Math.random()*flirts.length)];
+  flirtBox.classList.add("show");
+  flirtTimeout=setTimeout(()=>flirtBox.classList.remove("show"),3000);
+}
+
+canvas.addEventListener("pointerdown",e=>{
+  const r=canvas.getBoundingClientRect();
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  lanterns.forEach(l=>{
+    if(!l.alive) return;
+    if(Math.abs(l.x-x)<30 && Math.abs(l.y-y)<45){
+      l.alive=false;
+      lit++;
+      document.getElementById("progress").textContent=`Lanterns lit: ${lit} of 8`;
+      showFlirt();
+      if(lit>=8){ run=false; celebrate.classList.remove("hidden"); }
+    }
+  });
+});
+
+function startGame(){
+  resize();
+  lanterns=[]; lit=0; run=true;
+  flirtBox.classList.remove("show");
+  loop();
+}
+
+document.getElementById("finalBtn").onclick=()=>{
+  for(let i=0;i<6;i++){
+    const fl=document.createElement("div");
+    fl.className="finish-lantern";
+    fl.style.left=(10+Math.random()*80)+"%";
+    fl.style.animationDelay=(i*0.3)+"s";
+    document.body.appendChild(fl);
+    setTimeout(()=>fl.remove(),5000);
+  }
+  setTimeout(()=>{
+    celebrate.classList.add("hidden");
+    pageGame.classList.add("hidden");
+    page4.classList.remove("hidden");
+  },900);
+};
+</script>
+
+</body>
+</html>
